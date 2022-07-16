@@ -4,9 +4,8 @@ use crate::board::pieces::{Piece, PieceColor, PieceType};
 use crate::constants::{
     BOARD_HEIGHT, BOARD_PADDING, BOARD_WIDTH, SQUARE_COLOR_DARK, SQUARE_COLOR_LIGHT,
 };
-use crate::SQUARE_SIZE;
+use crate::{PieceTheme, SQUARE_SIZE};
 use bevy::prelude::*;
-use bevy::sprite::Anchor;
 use bevy_inspector_egui::Inspectable;
 use bevy_svg::prelude::Svg2dBundle;
 
@@ -136,7 +135,7 @@ impl Plugin for BoardPlugin {
 }
 
 /// Sets up the board, all squares and the default position for pieces
-fn setup_board(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_board(mut commands: Commands, piece_theme: Res<PieceTheme>) {
     let board_bundle = SpriteBundle {
         sprite: Sprite {
             color: Color::RED, // TODO: remove me
@@ -146,12 +145,12 @@ fn setup_board(mut commands: Commands, asset_server: Res<AssetServer>) {
         ..default()
     };
     commands.spawn_bundle(board_bundle).with_children(|parent| {
-        setup_squares(parent, &asset_server);
+        setup_squares(parent, &piece_theme);
     });
 }
 
 /// Sets up all squares as children for the given `board`
-fn setup_squares(board: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
+fn setup_squares(board: &mut ChildBuilder, piece_theme: &Res<PieceTheme>) {
     let center_offset = BOARD_WIDTH / 2.0 - SQUARE_SIZE / 2.0 + BOARD_PADDING;
     for x in 0..8 {
         for y in 0..8 {
@@ -175,14 +174,14 @@ fn setup_squares(board: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
                 .insert(Square)
                 .insert(location)
                 .with_children(|parent| {
-                    place_piece(parent, location, &asset_server);
+                    place_piece(parent, location, piece_theme);
                 });
         }
     }
 }
 
 /// Places a `Piece` on the given position as a direct child of the given `parent`.
-fn place_piece(square: &mut ChildBuilder, location: Location, asset_server: &Res<AssetServer>) {
+fn place_piece(square: &mut ChildBuilder, location: Location, piece_theme: &Res<PieceTheme>) {
     let piece = match location {
         // first rank
         Location { x: 0, y: 0 } => Piece::new(PieceType::Rook, PieceColor::White),
@@ -209,8 +208,11 @@ fn place_piece(square: &mut ChildBuilder, location: Location, asset_server: &Res
         Location { .. } => return,
     };
 
-    // TODO: use resources
-    let svg = asset_server.load(piece.resource_name());
+    let svg = piece_theme
+        .vectors
+        .get(&piece.resource_name())
+        .cloned()
+        .unwrap();
 
     let center_offset = SQUARE_SIZE / 2.0;
     let transform = Transform {

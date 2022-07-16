@@ -1,4 +1,4 @@
-use crate::board::pieces::Piece;
+use crate::board::pieces::{Piece, PieceTheme};
 use crate::board::{BoardPlugin, Location};
 use crate::constants::{SQUARE_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH};
 use bevy::prelude::*;
@@ -20,6 +20,14 @@ impl Plugin for DebugPlugin {
     }
 }
 
+pub struct ResourcePlugin;
+
+impl Plugin for ResourcePlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<PieceTheme>();
+    }
+}
+
 fn main() {
     App::new()
         .insert_resource(Msaa { samples: 4 })
@@ -32,13 +40,14 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(DebugPlugin)
-        .add_plugin(BoardPlugin)
         .add_plugin(SvgPlugin)
+        .add_plugin(ResourcePlugin)
+        .add_plugin(BoardPlugin)
         .add_startup_system(setup_basics)
         .run();
 }
 
-fn setup_basics(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup_basics(mut commands: Commands) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());
 }
