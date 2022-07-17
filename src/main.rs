@@ -1,12 +1,14 @@
-use crate::board::pieces::{Piece, PieceTheme};
+use crate::board::pieces::Piece;
 use crate::board::{BoardPlugin, Location};
 use crate::constants::{SQUARE_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH};
+use crate::resources::ResourcePlugin;
 use bevy::prelude::*;
 use bevy_inspector_egui::{RegisterInspectable, WorldInspectorPlugin};
 use bevy_svg::prelude::*;
 
 mod board;
 mod constants;
+mod resources;
 
 pub struct DebugPlugin;
 
@@ -17,14 +19,6 @@ impl Plugin for DebugPlugin {
                 .register_inspectable::<Location>()
                 .register_inspectable::<Piece>();
         }
-    }
-}
-
-pub struct ResourcePlugin;
-
-impl Plugin for ResourcePlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<PieceTheme>();
     }
 }
 

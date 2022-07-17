@@ -2,12 +2,14 @@ use std::fmt;
 
 use crate::board::pieces::{Piece, PieceColor, PieceType};
 use crate::constants::{
-    BOARD_HEIGHT, BOARD_PADDING, BOARD_WIDTH, SQUARE_COLOR_DARK, SQUARE_COLOR_LIGHT,
+    BOARD_HEIGHT, BOARD_LEGEND_FONT_SIZE, BOARD_PADDING, BOARD_WIDTH, SQUARE_COLOR_DARK,
+    SQUARE_COLOR_LIGHT,
 };
-use crate::{PieceTheme, SQUARE_SIZE};
+use crate::resources::{DefaultFont, PieceTheme};
+use crate::{SQUARE_SIZE, WINDOW_HEIGHT};
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
-use bevy_svg::prelude::Svg2dBundle;
+use bevy_svg::prelude::*;
 
 pub mod pieces;
 
@@ -62,6 +64,21 @@ pub enum File {
 }
 
 impl File {
+    pub fn from_index(index: usize) -> Self {
+        assert!(index < 8);
+        match index {
+            0 => File::A,
+            1 => File::B,
+            2 => File::C,
+            3 => File::D,
+            4 => File::E,
+            5 => File::F,
+            6 => File::G,
+            7 => File::H,
+            _ => unreachable!(),
+        }
+    }
+
     pub fn to_index(&self) -> usize {
         match self {
             File::A => 0,
@@ -95,22 +112,6 @@ impl fmt::Display for File {
 #[derive(Component)]
 pub struct Board;
 
-/// Returns the correct File for the given vector index
-pub fn file_for_index(index: usize) -> File {
-    assert!(index < 8);
-    match index {
-        0 => File::A,
-        1 => File::B,
-        2 => File::C,
-        3 => File::D,
-        4 => File::E,
-        5 => File::F,
-        6 => File::G,
-        7 => File::H,
-        _ => unimplemented!(),
-    }
-}
-
 /// Returns the correct Rank for the given vector index
 pub fn rank_for_index(index: usize) -> usize {
     assert!(index < 8);
@@ -135,7 +136,7 @@ impl Plugin for BoardPlugin {
 }
 
 /// Sets up the board, all squares and the default position for pieces
-fn setup_board(mut commands: Commands, piece_theme: Res<PieceTheme>) {
+fn setup_board(mut commands: Commands, font: Res<DefaultFont>, piece_theme: Res<PieceTheme>) {
     let board_bundle = SpriteBundle {
         sprite: Sprite {
             color: Color::RED, // TODO: remove me
@@ -144,15 +145,101 @@ fn setup_board(mut commands: Commands, piece_theme: Res<PieceTheme>) {
         },
         ..default()
     };
+    setup_vertical_legend(&mut commands, &font);
+    setup_horizontal_legend(&mut commands, &font);
     commands.spawn_bundle(board_bundle).with_children(|parent| {
         setup_squares(parent, &piece_theme);
     });
 }
 
+/// Draws the file notation as horizontal legend
+fn setup_horizontal_legend(commands: &mut Commands, font: &Res<DefaultFont>) {
+    let parent_bundle = NodeBundle {
+        style: Style {
+            justify_content: JustifyContent::SpaceAround,
+            align_items: AlignItems::Center,
+            position: Rect {
+                bottom: Val::Px((WINDOW_HEIGHT - BOARD_HEIGHT) / 4.0),
+                left: Val::Px(SQUARE_SIZE / 2.0),
+                ..default()
+            },
+            flex_direction: FlexDirection::Row,
+            size: Size::new(Val::Px(BOARD_WIDTH), Val::Px(SQUARE_SIZE / 2.0)),
+            ..default()
+        },
+        visibility: Visibility { is_visible: false },
+        ..default()
+    };
+
+    let text_style = TextStyle {
+        font: font.0.clone(),
+        font_size: BOARD_LEGEND_FONT_SIZE,
+        color: Color::WHITE,
+    };
+
+    commands
+        .spawn_bundle(parent_bundle)
+        .with_children(|parent| {
+            for y in 0..8 {
+                parent.spawn_bundle(TextBundle {
+                    text: Text::with_section(
+                        format!("{}", File::from_index(y)),
+                        text_style.clone(),
+                        TextAlignment::default(),
+                    ),
+                    ..default()
+                });
+            }
+        });
+}
+
+/// Draws the rank notation as vertical legend
+fn setup_vertical_legend(commands: &mut Commands, font: &Res<DefaultFont>) {
+    let parent_bundle = NodeBundle {
+        style: Style {
+            justify_content: JustifyContent::SpaceAround,
+            align_items: AlignItems::Center,
+            position: Rect {
+                bottom: Val::Px(SQUARE_SIZE),
+                left: Val::Px((WINDOW_HEIGHT - BOARD_HEIGHT) / 4.0),
+                ..default()
+            },
+            flex_direction: FlexDirection::Column,
+            size: Size::new(Val::Px(SQUARE_SIZE / 2.0), Val::Px(BOARD_HEIGHT)),
+            ..default()
+        },
+        visibility: Visibility { is_visible: false },
+        ..default()
+    };
+
+    let text_style = TextStyle {
+        font: font.0.clone(),
+        font_size: BOARD_LEGEND_FONT_SIZE,
+        color: Color::WHITE,
+    };
+
+    commands
+        .spawn_bundle(parent_bundle)
+        .with_children(|parent| {
+            for x in 0..8 {
+                parent.spawn_bundle(TextBundle {
+                    text: Text::with_section(
+                        format!("{}", rank_for_index(x)),
+                        text_style.clone(),
+                        TextAlignment::default(),
+                    ),
+                    ..default()
+                });
+            }
+        });
+}
+
 /// Sets up all squares as children for the given `board`
 fn setup_squares(board: &mut ChildBuilder, piece_theme: &Res<PieceTheme>) {
     let center_offset = BOARD_WIDTH / 2.0 - SQUARE_SIZE / 2.0 + BOARD_PADDING;
+    // iterate over files
     for x in 0..8 {
+        // iterate over ranks
         for y in 0..8 {
             let transform = Transform::from_xyz(
                 x as f32 * SQUARE_SIZE - center_offset,

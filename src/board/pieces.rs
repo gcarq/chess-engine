@@ -1,10 +1,6 @@
-use crate::constants::PIECE_THEME;
 use bevy::prelude::*;
-use bevy::utils::HashMap;
 use bevy_inspector_egui::Inspectable;
-use bevy_svg::prelude::Svg;
 use std::fmt;
-use std::path::Path;
 
 #[derive(Inspectable)]
 pub enum PieceType {
@@ -57,29 +53,5 @@ impl Piece {
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.notation())
-    }
-}
-
-pub struct PieceTheme {
-    pub vectors: HashMap<String, Handle<Svg>>,
-}
-
-impl FromWorld for PieceTheme {
-    /// Loads the vector graphics for the current `PIECE_THEME`
-    fn from_world(world: &mut World) -> Self {
-        let mut vectors = HashMap::with_capacity(12);
-        let asset_server = world.get_resource::<AssetServer>().unwrap();
-
-        // TODO: use load_folder()
-        let path = Path::new("piece").join(PIECE_THEME);
-        for color in ['b', 'w'] {
-            for piece in ['B', 'K', 'N', 'P', 'Q', 'R'] {
-                let asset_id = format!("{}{}", color, piece);
-                let svg_handle = asset_server.load(path.join(format!("{}.svg", asset_id)));
-                vectors.insert(asset_id, svg_handle);
-            }
-        }
-
-        Self { vectors }
     }
 }
