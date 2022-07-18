@@ -1,6 +1,7 @@
 use crate::board::components::{
-    File, Location, Piece, PieceColor, PieceType, SelectedPiece, Square,
+    Board, File, Location, Piece, PieceColor, PieceType, SelectedPiece, Square,
 };
+use crate::board::events::MovePieceEvent;
 use crate::board::utils;
 use crate::constants::{
     BOARD_HEIGHT, BOARD_LEGEND_FONT_SIZE, BOARD_PADDING, BOARD_WIDTH, PIECE_Z_AXIS, SQUARE_Z_AXIS,
@@ -22,9 +23,12 @@ pub fn setup_board(mut commands: Commands, font: Res<DefaultFont>, piece_theme: 
     };
     draw_vertical_legend(&mut commands, &font);
     draw_horizontal_legend(&mut commands, &font);
-    commands.spawn_bundle(board_bundle).with_children(|parent| {
-        draw_squares(parent, &piece_theme);
-    });
+    commands
+        .spawn_bundle(board_bundle)
+        .with_children(|parent| {
+            draw_squares(parent, &piece_theme);
+        })
+        .insert(Board);
 }
 
 /// Draws the file notation as horizontal legend
@@ -195,11 +199,11 @@ fn place_piece(square: &mut ChildBuilder, location: Location, piece_theme: &Res<
         .insert(location);
 }
 
-/// This system is responsible for piece selection
-pub fn piece_selection(
+/// This system picks up a piece if `MouseButton::Left` has just been pressed on a square
+pub fn left_click_piece_selection(
     mut commands: Commands,
-    squares: Query<(&Children, &Location, &GlobalTransform), With<Square>>,
-    cameras: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+    squares_q: Query<(&Children, &GlobalTransform), With<Square>>,
+    cameras_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     mouse_button_input: Res<Input<MouseButton>>,
     windows: Res<Windows>,
 ) {
@@ -208,12 +212,13 @@ pub fn piece_selection(
         return;
     }
 
-    let cursor = some_or_return!(utils::translate_cursor_pos(cameras, windows));
-    for (children, location, transform) in squares.iter() {
+    let cursor = some_or_return!(utils::translate_cursor_pos(cameras_q, windows));
+    for (children, transform) in squares_q.iter() {
         // only consider squares that have pieces on
         if children.len() == 0 {
             continue;
         }
+
         // find current piece and set it as currently selected
         if utils::intersects_square(&cursor, &transform.translation) {
             assert_eq!(
@@ -222,57 +227,44 @@ pub fn piece_selection(
                 "there are multiple pieces on the same square"
             );
             commands.insert_resource(SelectedPiece(children[0]));
-            println!("selected piece at {}", location);
             break;
         }
     }
 }
 
-/// This system is responsible for tracking the current selected piece
-pub fn piece_deselection(
-    mut commands: Commands,
+/// This system will trigger a `MovePieceEvent` if `MouseButton::Left` has just been released
+pub fn left_click_piece_release(
+    mut pieces_q: Query<&Parent, (Without<Square>, Without<MainCamera>)>,
+    squares_q: Query<(Entity, &GlobalTransform), With<Square>>,
+    cameras_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     selected_piece: Option<Res<SelectedPiece>>,
-    mut pieces: Query<
-        (&Parent, &mut GlobalTransform),
-        (With<Piece>, Without<Square>, Without<MainCamera>),
-    >,
-    squares: Query<(Entity, &Location, &GlobalTransform), With<Square>>,
-    cameras: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     mouse_button_input: Res<Input<MouseButton>>,
     windows: Res<Windows>,
+    mut event_writer: EventWriter<MovePieceEvent>,
 ) {
     // only consider piece deselection if left mouse button was just released
     if !mouse_button_input.just_released(MouseButton::Left) {
         return;
     }
 
-    let piece = some_or_return!(selected_piece);
-    let (old_square, mut piece_transform) = ok_or_return!(pieces.get_mut(piece.0));
-    // restore original z axis value
-    piece_transform.translation.z = PIECE_Z_AXIS;
+    let piece = some_or_return!(selected_piece).0;
+
     // translate position and check if cursor is on a valid square
-    let cursor = some_or_return!(utils::translate_cursor_pos(cameras, windows));
-    for (new_square, location, square_transform) in squares.iter() {
+    let cursor = some_or_return!(utils::translate_cursor_pos(cameras_q, windows));
+    for (new_square, square_transform) in squares_q.iter() {
         if utils::intersects_square(&cursor, &square_transform.translation) {
-            // switch parent square to place piece
-            commands.entity(old_square.0).remove_children(&[piece.0]);
-            commands.entity(new_square).add_child(piece.0);
-            // adjust transform of piece
-            let center_offset = utils::center_offset();
-            piece_transform.translation.x = square_transform.translation.x - center_offset;
-            piece_transform.translation.y = square_transform.translation.y + center_offset;
-            commands.remove_resource::<SelectedPiece>();
-            println!("placed piece at {}", location);
+            let old_square = ok_or_return!(pieces_q.get_mut(piece));
+            event_writer.send(MovePieceEvent::new(old_square.0, new_square, piece));
             break;
         }
     }
 }
 
-/// This system is responsible for tracking the current selected piece
-pub fn handle_piece_movement(
+/// Draws `SelectedPiece` at the cursor position
+pub fn draw_selected_piece(
+    mut pieces_q: Query<&mut GlobalTransform, Without<MainCamera>>,
+    cameras_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     selected_piece: Option<Res<SelectedPiece>>,
-    mut pieces: Query<&mut GlobalTransform, Without<MainCamera>>,
-    cameras: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     mouse_button_input: Res<Input<MouseButton>>,
     windows: Res<Windows>,
 ) {
@@ -281,13 +273,13 @@ pub fn handle_piece_movement(
         return;
     }
 
-    let piece = some_or_return!(selected_piece);
-    let cursor = some_or_return!(utils::translate_cursor_pos(cameras, windows));
-    println!("cursor: {:?}", cursor);
-    let mut transform = ok_or_return!(pieces.get_mut(piece.0));
-    let center_offset = utils::center_offset();
+    let piece = some_or_return!(selected_piece).0;
+    let cursor = some_or_return!(utils::translate_cursor_pos(cameras_q, windows));
+    let mut transform = ok_or_return!(pieces_q.get_mut(piece));
+
     // stick piece to cursor and clamp it to board size
     let board_offset = BOARD_WIDTH / 2.0;
+    let center_offset = utils::center_offset();
     let left_bound = (board_offset + center_offset) * -1.0;
     let right_bound = board_offset - center_offset;
     transform.translation.x = (cursor.x - center_offset).clamp(left_bound, right_bound);
@@ -295,4 +287,32 @@ pub fn handle_piece_movement(
 
     // increase z axis so that selected piece is always in foreground
     transform.translation.z = PIECE_Z_AXIS * 2.0;
+}
+
+/// Handles `MovePieceEvent` and makes all checks necessary if this is a legal move
+pub fn handle_move_piece_events(
+    mut commands: Commands,
+    mut pieces_q: Query<(&mut GlobalTransform, &mut Piece), Without<Square>>,
+    squares_q: Query<(&GlobalTransform, &Location), With<Square>>,
+    mut events: EventReader<MovePieceEvent>,
+) {
+    for event in events.iter() {
+        // check if square is blocked by same color piece
+
+        // switch parent square to place piece
+        commands.entity(event.from).remove_children(&[event.piece]);
+        commands.entity(event.to).add_child(event.piece);
+
+        let (mut piece_transform, mut piece_comp) = ok_or_return!(pieces_q.get_mut(event.piece));
+        let (ns_transform, ns_loc) = ok_or_return!(squares_q.get(event.to));
+
+        // adjust piece transform to match new square
+        let center_offset = utils::center_offset();
+        piece_transform.translation.x = ns_transform.translation.x - center_offset;
+        piece_transform.translation.y = ns_transform.translation.y + center_offset;
+        piece_transform.translation.z = PIECE_Z_AXIS;
+        piece_comp.has_moved = true;
+        commands.remove_resource::<SelectedPiece>();
+        println!("{}{}", *piece_comp, ns_loc);
+    }
 }

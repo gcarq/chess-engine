@@ -135,11 +135,16 @@ pub enum PieceColor {
 pub struct Piece {
     pub kind: PieceType,
     pub color: PieceColor,
+    pub has_moved: bool,
 }
 
 impl Piece {
     pub fn new(kind: PieceType, color: PieceColor) -> Self {
-        Self { kind, color }
+        Self {
+            kind,
+            color,
+            has_moved: false,
+        }
     }
 
     pub fn notation(&self) -> char {
