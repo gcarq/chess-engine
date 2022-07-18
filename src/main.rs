@@ -1,5 +1,5 @@
-use crate::board::pieces::Piece;
-use crate::board::{BoardPlugin, Location};
+use crate::board::components::{Location, Piece};
+use crate::board::plugin::BoardPlugin;
 use crate::constants::{SQUARE_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH};
 use crate::resources::ResourcePlugin;
 use bevy::prelude::*;
@@ -8,6 +8,7 @@ use bevy_svg::prelude::*;
 
 mod board;
 mod constants;
+pub mod macros;
 mod resources;
 
 pub struct DebugPlugin;
@@ -41,7 +42,12 @@ fn main() {
         .run();
 }
 
+#[derive(Component)]
+pub struct MainCamera;
+
 fn setup_basics(mut commands: Commands) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands
+        .spawn_bundle(OrthographicCameraBundle::new_2d())
+        .insert(MainCamera);
     commands.spawn_bundle(UiCameraBundle::default());
 }
