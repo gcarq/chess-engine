@@ -216,7 +216,11 @@ pub fn piece_selection(
         }
         // find current piece and set it as currently selected
         if utils::intersects_square(&cursor, &transform.translation) {
-            assert_eq!(children.len(), 1, "there are multiple pieces on the square");
+            assert_eq!(
+                children.len(),
+                1,
+                "there are multiple pieces on the same square"
+            );
             commands.insert_resource(SelectedPiece(children[0]));
             println!("selected piece at {}", location);
             break;
@@ -257,11 +261,11 @@ pub fn piece_deselection(
             let center_offset = utils::center_offset();
             piece_transform.translation.x = square_transform.translation.x - center_offset;
             piece_transform.translation.y = square_transform.translation.y + center_offset;
+            commands.remove_resource::<SelectedPiece>();
             println!("placed piece at {}", location);
             break;
         }
     }
-    commands.remove_resource::<SelectedPiece>();
 }
 
 /// This system is responsible for tracking the current selected piece
@@ -273,15 +277,22 @@ pub fn handle_piece_movement(
     windows: Res<Windows>,
 ) {
     // only consider piece movements if mouse button is pressed
-    if mouse_button_input.pressed(MouseButton::Left) {
-        let piece = some_or_return!(selected_piece);
-        let cursor = some_or_return!(utils::translate_cursor_pos(cameras, windows));
-        let mut transform = ok_or_return!(pieces.get_mut(piece.0));
-        let center_offset = utils::center_offset();
-        // stick piece to cursor
-        transform.translation.x = cursor.x - center_offset;
-        transform.translation.y = cursor.y + center_offset;
-        // increase z axis so that selected piece is always in foreground
-        transform.translation.z = PIECE_Z_AXIS * 2.0;
+    if !mouse_button_input.pressed(MouseButton::Left) {
+        return;
     }
+
+    let piece = some_or_return!(selected_piece);
+    let cursor = some_or_return!(utils::translate_cursor_pos(cameras, windows));
+    println!("cursor: {:?}", cursor);
+    let mut transform = ok_or_return!(pieces.get_mut(piece.0));
+    let center_offset = utils::center_offset();
+    // stick piece to cursor and clamp it to board size
+    let board_offset = BOARD_WIDTH / 2.0;
+    let left_bound = (board_offset + center_offset) * -1.0;
+    let right_bound = board_offset - center_offset;
+    transform.translation.x = (cursor.x - center_offset).clamp(left_bound, right_bound);
+    transform.translation.y = (cursor.y + center_offset).clamp(left_bound, right_bound);
+
+    // increase z axis so that selected piece is always in foreground
+    transform.translation.z = PIECE_Z_AXIS * 2.0;
 }
