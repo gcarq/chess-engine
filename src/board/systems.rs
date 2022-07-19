@@ -282,10 +282,14 @@ pub fn draw_selected_piece(
     // stick piece to cursor and clamp it to board size
     let board_offset = BOARD_WIDTH / 2.0;
     let center_offset = utils::center_offset();
-    let left_bound = (board_offset + center_offset) * -1.0;
-    let right_bound = board_offset - center_offset;
-    transform.translation.x = (cursor.x - center_offset).clamp(left_bound, right_bound);
-    transform.translation.y = (cursor.y + center_offset).clamp(left_bound, right_bound);
+    transform.translation.x = (cursor.x - center_offset).clamp(
+        (board_offset + center_offset) * -1.0,
+        board_offset - center_offset,
+    );
+    transform.translation.y = (cursor.y + center_offset).clamp(
+        (board_offset - center_offset) * -1.0,
+        board_offset + center_offset,
+    );
 
     // increase z axis so that selected piece is always in foreground
     transform.translation.z = PIECE_Z_AXIS * 2.0;
