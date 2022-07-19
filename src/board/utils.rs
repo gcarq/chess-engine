@@ -1,4 +1,5 @@
-use crate::board::components::SquareColor;
+use crate::board::components::{Selected, SquareColor};
+use crate::board::SelectedPiece;
 use crate::{MainCamera, SQUARE_SIZE};
 use bevy::prelude::*;
 
@@ -59,4 +60,17 @@ pub fn square_color(x: usize, y: usize) -> SquareColor {
 /// Returns the center offset for a `Square`
 pub fn center_offset() -> f32 {
     SQUARE_SIZE / 2.0
+}
+
+/// Deselects the current piece
+pub fn deselect_piece(commands: &mut Commands, piece: Entity) {
+    commands.entity(piece).remove::<Selected>();
+    commands.remove_resource::<SelectedPiece>();
+}
+
+/// Adjusts the given piece `GlobalTransform` to square `GlobalTransform`
+pub fn adjust_to_square(piece: &mut GlobalTransform, square: &GlobalTransform) {
+    let center_offset = center_offset();
+    piece.translation.x = square.translation.x - center_offset;
+    piece.translation.y = square.translation.y + center_offset;
 }

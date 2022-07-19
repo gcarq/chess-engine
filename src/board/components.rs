@@ -125,7 +125,7 @@ pub enum PieceType {
     Pawn,
 }
 
-#[derive(Inspectable, Debug)]
+#[derive(Inspectable, Debug, Eq, PartialEq, Copy, Clone)]
 pub enum PieceColor {
     Black,
     White,
@@ -174,5 +174,5 @@ impl fmt::Display for Piece {
     }
 }
 
-/// Holds the currently selected piece to move it around
-pub struct SelectedPiece(pub Entity);
+#[derive(Component)]
+pub struct Selected;

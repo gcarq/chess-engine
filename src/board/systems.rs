@@ -1,8 +1,8 @@
 use crate::board::components::{
-    Board, File, Location, Piece, PieceColor, PieceType, SelectedPiece, Square,
+    Board, File, Location, Piece, PieceColor, PieceType, Selected, Square,
 };
-use crate::board::events::MovePieceEvent;
-use crate::board::utils;
+use crate::board::events::{CheckedPieceMoveEvent, UncheckedPieceMoveEvent};
+use crate::board::{utils, SelectedPiece};
 use crate::constants::{
     BOARD_HEIGHT, BOARD_LEGEND_FONT_SIZE, BOARD_PADDING, BOARD_WIDTH, PIECE_Z_AXIS, SQUARE_Z_AXIS,
 };
@@ -226,13 +226,15 @@ pub fn left_click_piece_selection(
                 1,
                 "there are multiple pieces on the same square"
             );
-            commands.insert_resource(SelectedPiece(children[0]));
+            let selected = children[0];
+            commands.entity(selected).insert(Selected);
+            commands.insert_resource(SelectedPiece(selected));
             break;
         }
     }
 }
 
-/// This system will trigger a `MovePieceEvent` if `MouseButton::Left` has just been released
+/// This system will trigger a `UncheckedPieceMoveEvent` if `MouseButton::Left` has just been released
 pub fn left_click_piece_release(
     mut pieces_q: Query<&Parent, (Without<Square>, Without<MainCamera>)>,
     squares_q: Query<(Entity, &GlobalTransform), With<Square>>,
@@ -240,7 +242,7 @@ pub fn left_click_piece_release(
     selected_piece: Option<Res<SelectedPiece>>,
     mouse_button_input: Res<Input<MouseButton>>,
     windows: Res<Windows>,
-    mut event_writer: EventWriter<MovePieceEvent>,
+    mut event_writer: EventWriter<UncheckedPieceMoveEvent>,
 ) {
     // only consider piece deselection if left mouse button was just released
     if !mouse_button_input.just_released(MouseButton::Left) {
@@ -253,8 +255,8 @@ pub fn left_click_piece_release(
     let cursor = some_or_return!(utils::translate_cursor_pos(cameras_q, windows));
     for (new_square, square_transform) in squares_q.iter() {
         if utils::intersects_square(&cursor, &square_transform.translation) {
-            let old_square = ok_or_return!(pieces_q.get_mut(piece));
-            event_writer.send(MovePieceEvent::new(old_square.0, new_square, piece));
+            let old_square = ok_or_return!(pieces_q.get_mut(piece)).0;
+            event_writer.send(UncheckedPieceMoveEvent::new(old_square, new_square, piece));
             break;
         }
     }
@@ -289,30 +291,56 @@ pub fn draw_selected_piece(
     transform.translation.z = PIECE_Z_AXIS * 2.0;
 }
 
-/// Handles `MovePieceEvent` and makes all checks necessary if this is a legal move
-pub fn handle_move_piece_events(
+/// Handles `UncheckedPieceMoveEvent` and checks if this is a legal move
+pub fn check_move_legality(
+    pieces_q: Query<&Piece, Without<Selected>>,
+    square_q: Query<&Children, With<Square>>,
+    selected_q: Query<&Piece, With<Selected>>,
+    mut unchecked_moves: EventReader<UncheckedPieceMoveEvent>,
+    mut checked_moves: EventWriter<CheckedPieceMoveEvent>,
+) {
+    for event in unchecked_moves.iter() {
+        // check if new square is blocked by a same color piece
+        let selected_comp = ok_or_return!(selected_q.get(event.piece));
+        let ns_children = ok_or_return!(square_q.get(event.to));
+        if ns_children.len() > 0 {
+            let piece_comp = ok_or_return!(pieces_q.get(ns_children[0]));
+            if piece_comp.color == selected_comp.color {
+                checked_moves.send(CheckedPieceMoveEvent::from(event, false));
+                continue;
+            }
+        }
+
+        checked_moves.send(CheckedPieceMoveEvent::from(event, true));
+    }
+}
+
+/// Handles `CheckedPieceMoveEvent`
+pub fn handle_checked_move_events(
     mut commands: Commands,
-    mut pieces_q: Query<(&mut GlobalTransform, &mut Piece), Without<Square>>,
-    squares_q: Query<(&GlobalTransform, &Location), With<Square>>,
-    mut events: EventReader<MovePieceEvent>,
+    square_q: Query<&GlobalTransform, With<Square>>,
+    mut selected_q: Query<(&mut GlobalTransform, &mut Piece), (With<Selected>, Without<Square>)>,
+    mut events: EventReader<CheckedPieceMoveEvent>,
 ) {
     for event in events.iter() {
-        // check if square is blocked by same color piece
+        let (mut selected_tf, mut selected_piece) = ok_or_return!(selected_q.get_mut(event.piece));
 
-        // switch parent square to place piece
-        commands.entity(event.from).remove_children(&[event.piece]);
-        commands.entity(event.to).add_child(event.piece);
+        let target_square = match event.is_legal {
+            true => {
+                // switch parent square to place piece
+                commands.entity(event.from).remove_children(&[event.piece]);
+                commands.entity(event.to).add_child(event.piece);
+                selected_tf.translation.z = PIECE_Z_AXIS;
+                selected_piece.has_moved = true;
+                ok_or_return!(square_q.get(event.to))
+            }
+            false => {
+                println!("illegal move");
+                ok_or_return!(square_q.get(event.from))
+            }
+        };
 
-        let (mut piece_transform, mut piece_comp) = ok_or_return!(pieces_q.get_mut(event.piece));
-        let (ns_transform, ns_loc) = ok_or_return!(squares_q.get(event.to));
-
-        // adjust piece transform to match new square
-        let center_offset = utils::center_offset();
-        piece_transform.translation.x = ns_transform.translation.x - center_offset;
-        piece_transform.translation.y = ns_transform.translation.y + center_offset;
-        piece_transform.translation.z = PIECE_Z_AXIS;
-        piece_comp.has_moved = true;
-        commands.remove_resource::<SelectedPiece>();
-        println!("{}{}", *piece_comp, ns_loc);
+        utils::adjust_to_square(&mut selected_tf, target_square);
+        utils::deselect_piece(&mut commands, event.piece);
     }
 }
