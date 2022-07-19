@@ -1,31 +1,47 @@
 use bevy::prelude::*;
 
 pub struct UncheckedPieceMoveEvent {
-    pub from: Entity,
-    pub to: Entity,
     pub piece: Entity,
+    pub source: Entity,
+    pub target: Entity,
 }
 
 impl UncheckedPieceMoveEvent {
-    pub fn new(from: Entity, to: Entity, piece: Entity) -> Self {
-        Self { from, to, piece }
+    pub fn new(piece: Entity, source: Entity, target: Entity) -> Self {
+        Self {
+            piece,
+            source,
+            target,
+        }
     }
 }
 
+pub enum MoveTarget {
+    Legal(Entity),
+    Illegal,
+    OutOfBound,
+}
+
 pub struct CheckedPieceMoveEvent {
-    pub from: Entity,
-    pub to: Entity,
     pub piece: Entity,
-    pub is_legal: bool,
+    pub source: Entity,
+    pub target: MoveTarget,
 }
 
 impl CheckedPieceMoveEvent {
-    pub fn from(event: &UncheckedPieceMoveEvent, is_legal: bool) -> Self {
+    pub fn new(piece: Entity, source: Entity, target: MoveTarget) -> Self {
         Self {
-            from: event.from,
-            to: event.to,
-            piece: event.piece,
-            is_legal,
+            piece,
+            source,
+            target,
         }
+    }
+
+    pub fn legal(event: &UncheckedPieceMoveEvent) -> Self {
+        Self::new(event.piece, event.source, MoveTarget::Legal(event.target))
+    }
+
+    pub fn illegal(event: &UncheckedPieceMoveEvent) -> Self {
+        Self::new(event.piece, event.source, MoveTarget::Illegal)
     }
 }
