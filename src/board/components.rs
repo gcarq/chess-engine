@@ -5,7 +5,7 @@ use crate::constants::{SQUARE_COLOR_DARK, SQUARE_COLOR_LIGHT};
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 
-#[derive(Component, Inspectable, Copy, Clone, Debug)]
+#[derive(Component, Inspectable, Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Location {
     pub x: usize,
     pub y: usize,
@@ -16,10 +16,6 @@ impl Location {
         assert!(x < 9);
         assert!(y < 9);
         Self { x, y }
-    }
-
-    pub fn from_notation(file: File, rank: usize) -> Self {
-        Self::new(file.to_index(), utils::index_for_rank(rank))
     }
 }
 
@@ -43,7 +39,7 @@ pub enum SquareColor {
 }
 
 impl SquareColor {
-    pub fn color(&self) -> Color {
+    pub fn raw(&self) -> Color {
         match &self {
             SquareColor::Light => SQUARE_COLOR_LIGHT,
             SquareColor::Dark => SQUARE_COLOR_DARK,
@@ -79,19 +75,6 @@ impl File {
             6 => File::G,
             7 => File::H,
             _ => unreachable!(),
-        }
-    }
-
-    pub fn to_index(&self) -> usize {
-        match self {
-            File::A => 0,
-            File::B => 1,
-            File::C => 2,
-            File::D => 3,
-            File::E => 4,
-            File::F => 5,
-            File::G => 6,
-            File::H => 7,
         }
     }
 }
@@ -174,5 +157,10 @@ impl fmt::Display for Piece {
     }
 }
 
+/// Used to distinguish between selected and non-selected pieces and squares
 #[derive(Component)]
 pub struct Selected;
+
+/// Used to mark legal squares for a possible piece move
+#[derive(Component)]
+pub struct LegalSquare;

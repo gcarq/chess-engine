@@ -20,6 +20,7 @@ pub enum MoveTarget {
     Legal(Entity),
     Illegal,
     OutOfBound,
+    None,
 }
 
 pub struct CheckedPieceMoveEvent {

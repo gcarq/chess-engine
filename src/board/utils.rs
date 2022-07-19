@@ -43,11 +43,6 @@ pub fn rank_for_index(index: usize) -> usize {
     index + 1
 }
 
-pub fn index_for_rank(rank: usize) -> usize {
-    assert!(rank > 0 && rank < 9);
-    rank - 1
-}
-
 /// Returns the color for the given indicates
 pub fn square_color(x: usize, y: usize) -> SquareColor {
     if (x + y + 1) % 2 == 0 {
