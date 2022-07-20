@@ -19,8 +19,6 @@ impl UncheckedPieceMoveEvent {
 pub enum MoveTarget {
     Legal(Entity),
     Illegal,
-    OutOfBound,
-    None,
 }
 
 pub struct CheckedPieceMoveEvent {
@@ -45,4 +43,10 @@ impl CheckedPieceMoveEvent {
     pub fn illegal(event: &UncheckedPieceMoveEvent) -> Self {
         Self::new(event.piece, event.source, MoveTarget::Illegal)
     }
+}
+
+pub enum PieceSelectionEvent {
+    Selected(Entity),
+    Deselected(Entity),
+    Reselect(Entity),
 }

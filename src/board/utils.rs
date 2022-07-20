@@ -63,6 +63,12 @@ pub fn deselect_piece(commands: &mut Commands, piece: Entity) {
     commands.remove_resource::<SelectedPiece>();
 }
 
+/// Removes the given `piece` from `source` and adds it to `target` as a child
+pub fn switch_square(commands: &mut Commands, piece: Entity, source: Entity, target: Entity) {
+    commands.entity(source).remove_children(&[piece]);
+    commands.entity(target).add_child(piece);
+}
+
 /// Adjusts the given piece `GlobalTransform` to square `GlobalTransform`
 pub fn adjust_to_square(piece: &mut GlobalTransform, square: &GlobalTransform) {
     let center_offset = center_offset();

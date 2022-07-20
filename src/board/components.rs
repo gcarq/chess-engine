@@ -1,7 +1,10 @@
 use std::fmt;
 
 use crate::board::utils;
-use crate::constants::{SQUARE_COLOR_DARK, SQUARE_COLOR_LIGHT};
+use crate::constants::{
+    SQUARE_COLOR_DARK_DEFAULT, SQUARE_COLOR_DARK_SELECTED, SQUARE_COLOR_LIGHT_DEFAULT,
+    SQUARE_COLOR_LIGHT_SELECTED,
+};
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 
@@ -39,10 +42,17 @@ pub enum SquareColor {
 }
 
 impl SquareColor {
-    pub fn raw(&self) -> Color {
+    pub fn default(&self) -> Color {
         match &self {
-            SquareColor::Light => SQUARE_COLOR_LIGHT,
-            SquareColor::Dark => SQUARE_COLOR_DARK,
+            SquareColor::Light => SQUARE_COLOR_LIGHT_DEFAULT,
+            SquareColor::Dark => SQUARE_COLOR_DARK_DEFAULT,
+        }
+    }
+
+    pub fn selected(&self) -> Color {
+        match &self {
+            SquareColor::Light => SQUARE_COLOR_LIGHT_SELECTED,
+            SquareColor::Dark => SQUARE_COLOR_DARK_SELECTED,
         }
     }
 }
