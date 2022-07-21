@@ -34,8 +34,7 @@ pub fn left_click_piece_selection(
                     break;
                 }
                 unchecked_moves.send(UncheckedPieceMoveEvent::new(
-                    selected.piece,
-                    selected.square,
+                    selected.clone(),
                     square_entity,
                 ));
             }

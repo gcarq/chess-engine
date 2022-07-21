@@ -108,7 +108,7 @@ impl fmt::Display for File {
 #[derive(Component)]
 pub struct Board;
 
-#[derive(Inspectable, Debug)]
+#[derive(Inspectable, Debug, Copy, Clone)]
 pub enum PieceType {
     King,
     Queen,
@@ -124,7 +124,7 @@ pub enum PieceColor {
     White,
 }
 
-#[derive(Component, Inspectable, Debug)]
+#[derive(Component, Inspectable, Debug, Copy, Clone)]
 pub struct Piece {
     pub kind: PieceType,
     pub color: PieceColor,
@@ -171,6 +171,6 @@ impl fmt::Display for Piece {
 #[derive(Component)]
 pub struct Selected;
 
-/// Used to mark legal squares for a possible piece move
+/// Used to mark squares as possible targets for the current piece move
 #[derive(Component)]
-pub struct LegalSquare;
+pub struct PossibleTarget;

@@ -1,18 +1,14 @@
+use crate::board::SelectedPiece;
 use bevy::prelude::*;
 
 pub struct UncheckedPieceMoveEvent {
-    pub piece: Entity,
-    pub source: Entity,
+    pub selected: SelectedPiece,
     pub target: Entity,
 }
 
 impl UncheckedPieceMoveEvent {
-    pub fn new(piece: Entity, source: Entity, target: Entity) -> Self {
-        Self {
-            piece,
-            source,
-            target,
-        }
+    pub fn new(selected: SelectedPiece, target: Entity) -> Self {
+        Self { selected, target }
     }
 }
 
@@ -22,26 +18,21 @@ pub enum MoveTarget {
 }
 
 pub struct CheckedPieceMoveEvent {
-    pub piece: Entity,
-    pub source: Entity,
+    pub selected: SelectedPiece,
     pub target: MoveTarget,
 }
 
 impl CheckedPieceMoveEvent {
-    pub fn new(piece: Entity, source: Entity, target: MoveTarget) -> Self {
-        Self {
-            piece,
-            source,
-            target,
-        }
+    pub fn new(selected: SelectedPiece, target: MoveTarget) -> Self {
+        Self { selected, target }
     }
 
     pub fn legal(event: &UncheckedPieceMoveEvent) -> Self {
-        Self::new(event.piece, event.source, MoveTarget::Legal(event.target))
+        Self::new(event.selected.clone(), MoveTarget::Legal(event.target))
     }
 
     pub fn illegal(event: &UncheckedPieceMoveEvent) -> Self {
-        Self::new(event.piece, event.source, MoveTarget::Illegal)
+        Self::new(event.selected.clone(), MoveTarget::Illegal)
     }
 }
 
