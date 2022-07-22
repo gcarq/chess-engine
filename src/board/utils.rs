@@ -1,6 +1,6 @@
 use crate::board::components::{Selected, SquareColor};
 use crate::board::SelectedPiece;
-use crate::{MainCamera, SQUARE_SIZE};
+use crate::{MainCamera, Piece, SQUARE_SIZE};
 use bevy::prelude::*;
 
 /// Translates the current cursor position to world coordinates
@@ -74,4 +74,14 @@ pub fn adjust_to_square(piece: &mut GlobalTransform, square: &GlobalTransform) {
     let center_offset = center_offset();
     piece.translation.x = square.translation.x - center_offset;
     piece.translation.y = square.translation.y + center_offset;
+}
+
+/// Returns the first entity from the list that has the `Piece` component
+pub fn resolve_piece(entities: &[Entity], pieces_q: &Query<&Piece>) -> Option<(Entity, Piece)> {
+    for entity in entities {
+        if let Ok(comp) = pieces_q.get(*entity) {
+            return Some((*entity, *comp));
+        }
+    }
+    None
 }

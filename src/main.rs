@@ -4,6 +4,7 @@ use crate::constants::{SQUARE_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH};
 use crate::resources::ResourcePlugin;
 use bevy::prelude::*;
 use bevy_inspector_egui::{RegisterInspectable, WorldInspectorPlugin};
+use bevy_prototype_lyon::prelude::*;
 use bevy_svg::prelude::*;
 
 mod board;
@@ -35,6 +36,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(DebugPlugin)
+        .add_plugin(ShapePlugin)
         .add_plugin(SvgPlugin)
         .add_plugin(ResourcePlugin)
         .add_plugin(BoardPlugin)

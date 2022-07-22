@@ -1,4 +1,5 @@
 use bevy::prelude::Color;
+use bevy_prototype_lyon::prelude::RegularPolygonFeature;
 
 pub const WINDOW_HEIGHT: f32 = 800.0;
 pub const WINDOW_WIDTH: f32 = 800.0;
@@ -17,7 +18,10 @@ pub const SQUARE_COLOR_DARK_DEFAULT: Color = Color::rgb(0.55, 0.64, 0.68);
 pub const SQUARE_COLOR_LIGHT_SELECTED: Color = Color::rgb(0.96, 0.96, 0.41);
 pub const SQUARE_COLOR_DARK_SELECTED: Color = Color::rgb(0.73, 0.79, 0.16);
 
-pub const SQUARE_COLOR_POSSIBLE_TARGET: Color = Color::CYAN;
-
 pub const PIECE_Z_AXIS: f32 = 20.0;
 pub const PIECE_THEME: &str = "merida";
+
+pub const POSSIBLE_TARGET_FILL_COLOR: Color = Color::rgba(0.5, 0.5, 0.5, 0.1);
+pub const POSSIBLE_TARGET_OUTLINE_COLOR: Color = Color::rgba(0.0, 0.0, 0.0, 0.9);
+pub const POSSIBLE_TARGET_RADIUS: RegularPolygonFeature = RegularPolygonFeature::Radius(15.0);
+pub const POSSIBLE_TARGET_OUTLINE_WIDTH: f32 = 2.5;

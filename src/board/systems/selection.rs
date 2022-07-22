@@ -1,17 +1,38 @@
 use crate::board::components::{Piece, PossibleTarget, Selected, Square};
 use crate::board::events::PieceSelectionEvent;
 use crate::board::{utils, SelectedPiece};
+use crate::constants::{
+    PIECE_Z_AXIS, POSSIBLE_TARGET_FILL_COLOR, POSSIBLE_TARGET_OUTLINE_COLOR,
+    POSSIBLE_TARGET_OUTLINE_WIDTH, POSSIBLE_TARGET_RADIUS, SQUARE_Z_AXIS,
+};
 use crate::{ok_or_return, Location};
 use bevy::prelude::*;
+use bevy_prototype_lyon::prelude::*;
 
-fn mark_possible_moves(
+/// Visually marks the given locations on the board
+fn mark_possible_targets(
     commands: &mut Commands,
-    moves: &[Location],
+    targets: &[Location],
     query: &Query<(Entity, &Location), With<Square>>,
 ) {
+    let shape = RegularPolygon {
+        sides: 36,
+        feature: POSSIBLE_TARGET_RADIUS,
+        ..default()
+    };
+    let draw_mode = DrawMode::Outlined {
+        fill_mode: FillMode::color(POSSIBLE_TARGET_FILL_COLOR),
+        outline_mode: StrokeMode::new(POSSIBLE_TARGET_OUTLINE_COLOR, POSSIBLE_TARGET_OUTLINE_WIDTH),
+    };
+    let transform = Transform::from_xyz(0.0, 0.0, SQUARE_Z_AXIS + PIECE_Z_AXIS);
+
     for (entity, location) in query.iter() {
-        if moves.contains(location) {
-            commands.entity(entity).insert(PossibleTarget);
+        if targets.contains(location) {
+            commands.entity(entity).with_children(|square| {
+                square
+                    .spawn_bundle(GeometryBuilder::build_as(&shape, draw_mode, transform))
+                    .insert(PossibleTarget);
+            });
         }
     }
 }
@@ -21,7 +42,7 @@ pub fn handle_piece_selection_events(
     world: &World,
     mut commands: Commands,
     selected_squares_q: Query<Entity, (With<Square>, With<Selected>)>,
-    possible_target_squares_q: Query<Entity, (With<Square>, With<PossibleTarget>)>,
+    possible_targets_q: Query<Entity, With<PossibleTarget>>,
     squares_q: Query<(Entity, &Location), With<Square>>,
     piece_q: Query<&Parent, With<Piece>>,
     selected_piece: Option<Res<SelectedPiece>>,
@@ -43,7 +64,7 @@ pub fn handle_piece_selection_events(
                     SelectedPiece::new(square, *piece, world).expect("unable to select piece");
 
                 // mark squares and piece
-                mark_possible_moves(&mut commands, &selected.legal_moves, &squares_q);
+                mark_possible_targets(&mut commands, &selected.legal_moves, &squares_q);
                 commands.entity(square).insert(Selected);
                 commands.entity(*piece).insert(Selected);
                 commands.insert_resource(selected);
@@ -53,8 +74,8 @@ pub fn handle_piece_selection_events(
                 println!("Handling piece deselection for {:?}", piece);
 
                 // remove `PossibleTarget` component to reset squares to default color
-                possible_target_squares_q.for_each(|entity| {
-                    commands.entity(entity).remove::<PossibleTarget>();
+                possible_targets_q.for_each(|entity| {
+                    commands.entity(entity).despawn_recursive();
                 });
 
                 // deselect current square and piece
@@ -72,8 +93,8 @@ pub fn handle_piece_selection_events(
                 });
 
                 // deselect entities
-                possible_target_squares_q.for_each(|entity| {
-                    commands.entity(entity).remove::<PossibleTarget>();
+                possible_targets_q.for_each(|entity| {
+                    commands.entity(entity).despawn_recursive();
                 });
                 utils::deselect_piece(&mut commands, selected.piece);
 
@@ -82,7 +103,7 @@ pub fn handle_piece_selection_events(
                     SelectedPiece::new(square, *piece, world).expect("unable to select piece");
 
                 // mark squares and piece
-                mark_possible_moves(&mut commands, &selected.legal_moves, &squares_q);
+                mark_possible_targets(&mut commands, &selected.legal_moves, &squares_q);
                 commands.entity(square).insert(Selected);
                 commands.entity(*piece).insert(Selected);
                 commands.insert_resource(selected);

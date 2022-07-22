@@ -8,21 +8,14 @@ use crate::board::events::{
 };
 use crate::board::utils::square_color;
 use crate::board::{utils, SelectedPiece};
-use crate::constants::{BOARD_WIDTH, PIECE_Z_AXIS, SQUARE_COLOR_POSSIBLE_TARGET};
+use crate::constants::{BOARD_WIDTH, PIECE_Z_AXIS};
 use crate::{ok_or_return, some_or_return, MainCamera};
 use bevy::prelude::*;
 
 /// Draws `Square` based on their components
 pub fn handle_square_status_updates(
-    mut selected_squares_q: Query<
-        (&mut Sprite, &Location),
-        (With<Square>, With<Selected>, Without<PossibleTarget>),
-    >,
-    mut normal_squares_q: Query<
-        (&mut Sprite, &Location),
-        (With<Square>, Without<Selected>, Without<PossibleTarget>),
-    >,
-    mut target_squares_q: Query<(&mut Sprite, &Location), (With<Square>, With<PossibleTarget>)>,
+    mut selected_squares_q: Query<(&mut Sprite, &Location), (With<Square>, With<Selected>)>,
+    mut normal_squares_q: Query<(&mut Sprite, &Location), (With<Square>, Without<Selected>)>,
 ) {
     for (mut sprite, location) in selected_squares_q.iter_mut() {
         sprite.color = square_color(location.x, location.y).selected();
@@ -30,10 +23,6 @@ pub fn handle_square_status_updates(
 
     for (mut sprite, location) in normal_squares_q.iter_mut() {
         sprite.color = square_color(location.x, location.y).default();
-    }
-
-    for (mut sprite, _) in target_squares_q.iter_mut() {
-        sprite.color = SQUARE_COLOR_POSSIBLE_TARGET;
     }
 }
 
@@ -72,7 +61,7 @@ pub fn draw_selected_piece(
 
 /// Handles `UncheckedPieceMoveEvent` and checks if this is a legal move
 pub fn handle_unchecked_move_events(
-    pieces_q: Query<&Piece, Without<Selected>>,
+    pieces_q: Query<&Piece>,
     square_q: Query<&Children, With<Square>>,
     mut unchecked_moves: EventReader<UncheckedPieceMoveEvent>,
     mut checked_moves: EventWriter<CheckedPieceMoveEvent>,
@@ -82,8 +71,7 @@ pub fn handle_unchecked_move_events(
         let ns_children = ok_or_return!(square_q.get(event.target));
 
         // check if new square is blocked by a same color piece
-        if ns_children.len() > 0 {
-            let piece_comp = ok_or_return!(pieces_q.get(ns_children[0]));
+        if let Some((_, piece_comp)) = utils::resolve_piece(ns_children, &pieces_q) {
             if piece_comp.color == event.selected.piece_comp.color {
                 piece_selections.send(PieceSelectionEvent::Reselect(ns_children[0]));
                 continue;
@@ -98,7 +86,7 @@ pub fn handle_unchecked_move_events(
 pub fn handle_checked_move_events(
     mut commands: Commands,
     square_q: Query<&GlobalTransform, With<Square>>,
-    possible_target_squares_q: Query<Entity, (With<Square>, With<PossibleTarget>)>,
+    possible_targets_q: Query<Entity, With<PossibleTarget>>,
     mut selected_q: Query<(&mut GlobalTransform, &mut Piece), (With<Selected>, Without<Square>)>,
     mut piece_move_events: EventReader<CheckedPieceMoveEvent>,
 ) {
@@ -119,8 +107,8 @@ pub fn handle_checked_move_events(
                 );
                 selected_piece.has_moved = true;
                 commands.entity(target).insert(Selected);
-                possible_target_squares_q.for_each(|entity| {
-                    commands.entity(entity).remove::<PossibleTarget>();
+                possible_targets_q.for_each(|entity| {
+                    commands.entity(entity).despawn_recursive();
                 });
                 utils::deselect_piece(&mut commands, event.selected.piece);
                 ok_or_return!(square_q.get(target))

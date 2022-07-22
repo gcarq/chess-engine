@@ -607,6 +607,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_prototype_lyon"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0a902a6ba040d8874fc8798443ccc2f920077ab8d2a869e301b5900bfdbcd66"
+dependencies = [
+ "bevy",
+ "lyon_tessellation",
+ "svgtypes 0.5.0",
+]
+
+[[package]]
 name = "bevy_reflect"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1010,6 +1021,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy-inspector-egui",
+ "bevy_prototype_lyon",
  "bevy_svg",
 ]
 
