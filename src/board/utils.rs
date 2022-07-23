@@ -114,14 +114,31 @@ pub fn translate_from_offsets(location: &Location, offsets: Vec<Vec<isize>>) -> 
         .collect()
 }
 
-/// Returns the `Location` of all same color pieces
-pub fn same_color_pieces(color: &PieceColor, pieces: &Query<(&Piece, &Location)>) -> Vec<Location> {
-    pieces
+/// Returns a tuple of `Vec<Location>`, the first tuple element contains
+/// same color pieces and the second all different color pieces
+pub fn grouped_piece_locations(
+    selected_piece_color: &PieceColor,
+    pieces: &Query<(&Piece, &Location)>,
+) -> (Vec<Location>, Vec<Location>) {
+    let same_color_pieces = pieces
         .iter()
-        .filter_map(|(piece, location)| match color == &piece.color {
-            true => Some(location),
-            false => None,
-        })
+        .filter_map(
+            |(piece, location)| match selected_piece_color == &piece.color {
+                true => Some(location),
+                false => None,
+            },
+        )
         .cloned()
-        .collect()
+        .collect();
+    let different_color_pieces = pieces
+        .iter()
+        .filter_map(
+            |(piece, location)| match selected_piece_color != &piece.color {
+                true => Some(location),
+                false => None,
+            },
+        )
+        .cloned()
+        .collect();
+    (same_color_pieces, different_color_pieces)
 }

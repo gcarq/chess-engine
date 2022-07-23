@@ -29,9 +29,14 @@ impl SelectedPiece {
         let piece_comp = *world.get_entity(piece)?.get::<Piece>()?;
         let location_comp = *world.get_entity(square)?.get::<Location>()?;
 
-        let same_color_pieces = utils::same_color_pieces(&piece_comp.color, pieces);
-        let possible_targets =
-            SelectedPiece::legal_moves(&piece_comp, &location_comp, &same_color_pieces);
+        let (same_color_pieces, different_color_pieces) =
+            utils::grouped_piece_locations(&piece_comp.color, pieces);
+        let possible_targets = SelectedPiece::legal_moves(
+            &piece_comp,
+            &location_comp,
+            &same_color_pieces,
+            &different_color_pieces,
+        );
         Some(Self {
             square,
             piece,
@@ -47,6 +52,7 @@ impl SelectedPiece {
         piece: &Piece,
         location: &Location,
         same_color_pieces: &[Location],
+        different_color_pieces: &[Location],
     ) -> Vec<Location> {
         match piece.kind {
             PieceType::King => SelectedPiece::king_moves(location),
@@ -57,7 +63,7 @@ impl SelectedPiece {
             PieceType::Rook => SelectedPiece::rook_moves(location, same_color_pieces),
             PieceType::Bishop => SelectedPiece::bishop_moves(location, same_color_pieces),
             PieceType::Knight => SelectedPiece::knight_moves(location),
-            PieceType::Pawn => SelectedPiece::pawn_moves(location, piece),
+            PieceType::Pawn => SelectedPiece::pawn_moves(location, piece, different_color_pieces),
         }
         .into_iter()
         .filter(|loc| !same_color_pieces.contains(loc))
@@ -65,6 +71,7 @@ impl SelectedPiece {
     }
 
     /// Returns all possible king moves
+    /// TODO handle castling
     fn king_moves(location: &Location) -> Vec<Location> {
         let mut offsets = vec![-1, 0, 1].into_iter().permutations(2).collect_vec();
         offsets.extend(vec![vec![-1, -1], vec![1, 1]]);
@@ -87,25 +94,38 @@ impl SelectedPiece {
     }
 
     /// Returns all possible pawn moves
-    /// TODO: handle piece promotion, captures and en passant
-    fn pawn_moves(location: &Location, piece: &Piece) -> Vec<Location> {
+    /// TODO: handle piece promotion and en passant
+    fn pawn_moves(
+        location: &Location,
+        piece: &Piece,
+        different_color_pieces: &[Location],
+    ) -> Vec<Location> {
+        let y_modifier = match piece.color {
+            PieceColor::White => 1,
+            PieceColor::Black => -1,
+        };
         let mut squares = Vec::new();
-        match piece.color {
-            PieceColor::White => {
-                if location.y < 7 {
-                    squares.push(Location::new(location.x, location.y + 1));
+        match location.translate(0, y_modifier) {
+            Some(new_loc) => {
+                // a pawn cannot capture in the same way it moves
+                if !different_color_pieces.contains(&new_loc) {
+                    squares.push(new_loc);
                 }
+                // a pawn can move two squares on its first move
                 if !piece.has_moved {
-                    squares.push(Location::new(location.x, location.y + 2));
+                    squares.push(location.translate(0, 2 * y_modifier).unwrap());
                 }
+                // add diagonally forward squares for capturing
+                squares.extend(
+                    vec![1, -1]
+                        .into_iter()
+                        .filter_map(|x_offset| location.translate(x_offset, y_modifier))
+                        .filter(|loc| different_color_pieces.contains(loc)),
+                );
             }
-            PieceColor::Black => {
-                if location.y > 0 {
-                    squares.push(Location::new(location.x, location.y - 1));
-                }
-                if !piece.has_moved {
-                    squares.push(Location::new(location.x, location.y - 2));
-                }
+            None => {
+                // TODO: handle pawn promotion
+                println!("TODO: pawn promotion has not been implemented");
             }
         }
         squares
