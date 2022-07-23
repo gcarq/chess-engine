@@ -189,5 +189,8 @@ fn place_piece(square: &mut ChildBuilder, location: Location, piece_theme: &Res<
         transform,
         ..default()
     };
-    square.spawn_bundle(piece_bundle).insert(piece);
+    square
+        .spawn_bundle(piece_bundle)
+        .insert(piece)
+        .insert(location);
 }

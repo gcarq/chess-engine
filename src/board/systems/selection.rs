@@ -44,6 +44,7 @@ pub fn handle_piece_selection_events(
     selected_squares_q: Query<Entity, (With<Square>, With<Selected>)>,
     possible_targets_q: Query<Entity, With<PossibleTarget>>,
     squares_q: Query<(Entity, &Location), With<Square>>,
+    piece_locations_q: Query<(&Piece, &Location)>,
     piece_q: Query<&Parent, With<Piece>>,
     selected_piece: Option<Res<SelectedPiece>>,
     mut selection_events: EventReader<PieceSelectionEvent>,
@@ -60,11 +61,11 @@ pub fn handle_piece_selection_events(
                 });
 
                 let square = ok_or_return!(piece_q.get(*piece)).0;
-                let selected =
-                    SelectedPiece::new(square, *piece, world).expect("unable to select piece");
+                let selected = SelectedPiece::new(square, *piece, world, &piece_locations_q)
+                    .expect("unable to select piece");
 
                 // mark squares and piece
-                mark_possible_targets(&mut commands, &selected.legal_moves, &squares_q);
+                mark_possible_targets(&mut commands, &selected.possible_targets, &squares_q);
                 commands.entity(square).insert(Selected);
                 commands.entity(*piece).insert(Selected);
                 commands.insert_resource(selected);
@@ -99,11 +100,11 @@ pub fn handle_piece_selection_events(
                 utils::deselect_piece(&mut commands, selected.piece);
 
                 let square = ok_or_return!(piece_q.get(*piece)).0;
-                let selected =
-                    SelectedPiece::new(square, *piece, world).expect("unable to select piece");
+                let selected = SelectedPiece::new(square, *piece, world, &piece_locations_q)
+                    .expect("unable to select piece");
 
                 // mark squares and piece
-                mark_possible_targets(&mut commands, &selected.legal_moves, &squares_q);
+                mark_possible_targets(&mut commands, &selected.possible_targets, &squares_q);
                 commands.entity(square).insert(Selected);
                 commands.entity(*piece).insert(Selected);
                 commands.insert_resource(selected);

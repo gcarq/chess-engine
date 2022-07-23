@@ -1,6 +1,7 @@
-use crate::board::components::{Selected, SquareColor};
+use crate::board::components::{PieceColor, Selected, SquareColor};
+use crate::board::events::CheckedPieceMoveEvent;
 use crate::board::SelectedPiece;
-use crate::{MainCamera, Piece, SQUARE_SIZE};
+use crate::{Location, MainCamera, Piece, SQUARE_SIZE};
 use bevy::prelude::*;
 
 /// Translates the current cursor position to world coordinates
@@ -63,10 +64,29 @@ pub fn deselect_piece(commands: &mut Commands, piece: Entity) {
     commands.remove_resource::<SelectedPiece>();
 }
 
-/// Removes the given `piece` from `source` and adds it to `target` as a child
-pub fn switch_square(commands: &mut Commands, piece: Entity, source: Entity, target: Entity) {
-    commands.entity(source).remove_children(&[piece]);
-    commands.entity(target).add_child(piece);
+/// Removes piece entity from source square and adds it to the target square as a child,
+/// also replaces `Location` component on entity and sets `has_moved` to reflect this move properly
+pub fn update_entity_for_move(
+    commands: &mut Commands,
+    event: &CheckedPieceMoveEvent,
+    target: Entity,
+    loc_comp: Location,
+) {
+    // Update square children
+    commands
+        .entity(event.selected.square)
+        .remove_children(&[event.selected.piece]);
+    commands.entity(target).add_child(event.selected.piece);
+
+    // Update `Location` component for piece entity
+    commands.entity(event.selected.piece).remove::<Location>();
+    commands.entity(event.selected.piece).insert(loc_comp);
+
+    // Update `Piece` component for piece entity
+    let mut piece_comp = event.selected.piece_comp;
+    piece_comp.has_moved = true;
+    commands.entity(event.selected.piece).remove::<Piece>();
+    commands.entity(event.selected.piece).insert(piece_comp);
 }
 
 /// Adjusts the given piece `GlobalTransform` to square `GlobalTransform`
@@ -84,4 +104,24 @@ pub fn resolve_piece(entities: &[Entity], pieces_q: &Query<&Piece>) -> Option<(E
         }
     }
     None
+}
+
+/// Returns a new vector of `Location` created by the given location and offsets
+pub fn translate_from_offsets(location: &Location, offsets: Vec<Vec<isize>>) -> Vec<Location> {
+    offsets
+        .into_iter()
+        .filter_map(|off| location.translate(off[0], off[1]))
+        .collect()
+}
+
+/// Returns the `Location` of all same color pieces
+pub fn same_color_pieces(color: &PieceColor, pieces: &Query<(&Piece, &Location)>) -> Vec<Location> {
+    pieces
+        .iter()
+        .filter_map(|(piece, location)| match color == &piece.color {
+            true => Some(location),
+            false => None,
+        })
+        .cloned()
+        .collect()
 }

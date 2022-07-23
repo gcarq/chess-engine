@@ -62,65 +62,66 @@ pub fn draw_selected_piece(
 /// Handles `UncheckedPieceMoveEvent` and checks if this is a legal move
 pub fn handle_unchecked_move_events(
     pieces_q: Query<&Piece>,
-    square_q: Query<&Children, With<Square>>,
+    square_q: Query<(&Children, &Location), With<Square>>,
     mut unchecked_moves: EventReader<UncheckedPieceMoveEvent>,
     mut checked_moves: EventWriter<CheckedPieceMoveEvent>,
     mut piece_selections: EventWriter<PieceSelectionEvent>,
 ) {
     for event in unchecked_moves.iter() {
-        let ns_children = ok_or_return!(square_q.get(event.target));
+        let (ns_children, ns_location) = ok_or_return!(square_q.get(event.target));
 
         // check if new square is blocked by a same color piece
-        if let Some((_, piece_comp)) = utils::resolve_piece(ns_children, &pieces_q) {
+        if let Some((piece_entity, piece_comp)) = utils::resolve_piece(ns_children, &pieces_q) {
             if piece_comp.color == event.selected.piece_comp.color {
-                piece_selections.send(PieceSelectionEvent::Reselect(ns_children[0]));
+                piece_selections.send(PieceSelectionEvent::Reselect(piece_entity));
                 continue;
             }
         }
 
-        checked_moves.send(CheckedPieceMoveEvent::legal(event));
+        // check if target square makes up a legal move
+        if event.selected.possible_targets.contains(ns_location) {
+            checked_moves.send(CheckedPieceMoveEvent::legal(event));
+        } else {
+            checked_moves.send(CheckedPieceMoveEvent::illegal(event));
+        }
     }
 }
 
 /// Handles `CheckedPieceMoveEvent`
 pub fn handle_checked_move_events(
     mut commands: Commands,
+    location_q: Query<&Location>,
     square_q: Query<&GlobalTransform, With<Square>>,
     possible_targets_q: Query<Entity, With<PossibleTarget>>,
-    mut selected_q: Query<(&mut GlobalTransform, &mut Piece), (With<Selected>, Without<Square>)>,
+    mut selected_q: Query<&mut GlobalTransform, (With<Selected>, Without<Square>)>,
     mut piece_move_events: EventReader<CheckedPieceMoveEvent>,
 ) {
     for event in piece_move_events.iter() {
-        let (mut selected_tf, mut selected_piece) =
-            ok_or_return!(selected_q.get_mut(event.selected.piece));
+        let mut selected_tf = ok_or_return!(selected_q.get_mut(event.selected.piece));
 
         let target_square = match event.target {
             // if a legal move occurs we deselect the piece, but leave the source and target squares
             // as selected until a new move begins
             MoveTarget::Legal(target) => {
                 println!("legal move");
-                utils::switch_square(
-                    &mut commands,
-                    event.selected.piece,
-                    event.selected.square,
-                    target,
-                );
-                selected_piece.has_moved = true;
+                let loc_comp = *location_q.get(target).unwrap();
+                utils::update_entity_for_move(&mut commands, event, target, loc_comp);
                 commands.entity(target).insert(Selected);
-                possible_targets_q.for_each(|entity| {
-                    commands.entity(entity).despawn_recursive();
-                });
                 utils::deselect_piece(&mut commands, event.selected.piece);
-                ok_or_return!(square_q.get(target))
+                square_q.get(target).unwrap()
             }
             // if a illegal move occurs we want to
             // deselect the piece and move it to the source square
             MoveTarget::Illegal => {
                 println!("illegal move");
                 utils::deselect_piece(&mut commands, event.selected.piece);
-                ok_or_return!(square_q.get(event.selected.square))
+                square_q.get(event.selected.square).unwrap()
             }
         };
+
+        possible_targets_q.for_each(|entity| {
+            commands.entity(entity).despawn_recursive();
+        });
 
         selected_tf.translation.z = PIECE_Z_AXIS;
         utils::adjust_to_square(&mut selected_tf, target_square);

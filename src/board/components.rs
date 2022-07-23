@@ -20,6 +20,18 @@ impl Location {
         assert!(y < 9);
         Self { x, y }
     }
+
+    /// Translates the current location with the given offsets and returns a new one
+    pub fn translate(&self, x_offset: isize, y_offset: isize) -> Option<Location> {
+        let new_x = self.x as isize + x_offset;
+        let new_y = self.y as isize + y_offset;
+
+        if !(0..8).contains(&new_x) || !(0..8).contains(&new_y) {
+            return None;
+        }
+
+        Some(Location::new(new_x as usize, new_y as usize))
+    }
 }
 
 impl fmt::Display for Location {
