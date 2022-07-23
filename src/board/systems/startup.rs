@@ -12,7 +12,6 @@ use bevy_svg::prelude::*;
 pub fn setup_board(mut commands: Commands, font: Res<DefaultFont>, piece_theme: Res<PieceTheme>) {
     let board_bundle = SpriteBundle {
         sprite: Sprite {
-            color: Color::RED, // TODO: remove me
             custom_size: Some(Vec2::new(BOARD_WIDTH, BOARD_HEIGHT)),
             ..default()
         },
@@ -37,7 +36,7 @@ fn draw_horizontal_legend(commands: &mut Commands, font: &Res<DefaultFont>) {
             align_items: AlignItems::Center,
             position: Rect {
                 bottom: Val::Px((WINDOW_HEIGHT - BOARD_HEIGHT) / 4.0),
-                left: Val::Px(center_offset),
+                left: Val::Px(SQUARE_SIZE * 3.0),
                 ..default()
             },
             flex_direction: FlexDirection::Row,
@@ -79,7 +78,7 @@ fn draw_vertical_legend(commands: &mut Commands, font: &Res<DefaultFont>) {
             align_items: AlignItems::Center,
             position: Rect {
                 bottom: Val::Px(SQUARE_SIZE),
-                left: Val::Px((WINDOW_HEIGHT - BOARD_HEIGHT) / 4.0),
+                left: Val::Px(WINDOW_HEIGHT - BOARD_HEIGHT + SQUARE_SIZE),
                 ..default()
             },
             flex_direction: FlexDirection::Column,

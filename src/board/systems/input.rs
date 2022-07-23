@@ -1,14 +1,14 @@
 use crate::board::components::Square;
 use crate::board::events::{PieceSelectionEvent, UncheckedPieceMoveEvent};
 use crate::board::{utils, SelectedPiece};
-use crate::{some_or_return, Location, MainCamera, Piece};
+use crate::{some_or_return, BoardCamera, Location, Piece};
 use bevy::prelude::*;
 
 /// This system handles `MouseButton::Left` input and fires required events
 pub fn left_click_piece_selection(
     pieces_q: Query<&Piece>,
     squares_q: Query<(Entity, &Children, &Location, &GlobalTransform), With<Square>>,
-    cameras_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+    cameras_q: Query<(&Camera, &GlobalTransform), With<BoardCamera>>,
     selected_piece: Option<Res<SelectedPiece>>,
     mouse_button_input: Res<Input<MouseButton>>,
     windows: Res<Windows>,

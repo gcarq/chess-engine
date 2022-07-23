@@ -1,12 +1,12 @@
 use crate::board::components::{PieceColor, Selected, SquareColor};
 use crate::board::events::CheckedPieceMoveEvent;
 use crate::board::SelectedPiece;
-use crate::{Location, MainCamera, Piece, SQUARE_SIZE};
+use crate::{BoardCamera, Location, Piece, SQUARE_SIZE};
 use bevy::prelude::*;
 
 /// Translates the current cursor position to world coordinates
 pub fn translate_cursor_pos(
-    cameras: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+    cameras: Query<(&Camera, &GlobalTransform), With<BoardCamera>>,
     windows: Res<Windows>,
 ) -> Option<Vec2> {
     // assuming there is exactly one main camera entity, so query::single() is OK

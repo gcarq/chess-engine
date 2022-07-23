@@ -2,7 +2,10 @@ use bevy::prelude::Color;
 use bevy_prototype_lyon::prelude::RegularPolygonFeature;
 
 pub const WINDOW_HEIGHT: f32 = 800.0;
-pub const WINDOW_WIDTH: f32 = 800.0;
+pub const WINDOW_WIDTH: f32 = 1200.0;
+pub const WINDOW_BACKGROUND_COLOR: Color = Color::rgb(0.08, 0.08, 0.07);
+
+pub const SIDE_PANEL_RIGHT_WIDTH: f32 = 300.0;
 
 pub const BOARD_HEIGHT: f32 = 640.0;
 pub const BOARD_WIDTH: f32 = BOARD_HEIGHT;
