@@ -113,7 +113,10 @@ impl SelectedPiece {
                 }
                 // a pawn can move two squares on its first move
                 if !piece.has_moved {
-                    squares.push(location.translate(0, 2 * y_modifier).unwrap());
+                    let first_move_square = location.translate(0, 2 * y_modifier).unwrap();
+                    if !different_color_pieces.contains(&first_move_square) {
+                        squares.push(first_move_square);
+                    }
                 }
                 // add diagonally forward squares for capturing
                 squares.extend(
