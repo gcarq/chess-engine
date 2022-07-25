@@ -53,7 +53,7 @@ pub fn handle_piece_selection_events(
         match event {
             PieceSelectionEvent::Selected(piece) => {
                 assert!(selected_piece.is_none());
-                println!("Handling piece selection for {:?}", piece);
+                println!("DEBUG: andling piece selection for {:?}", piece);
 
                 // remove `Selected` component from all squares to clear previous move
                 selected_squares_q.for_each(|square| {
@@ -72,7 +72,7 @@ pub fn handle_piece_selection_events(
             }
             PieceSelectionEvent::Deselected(piece) => {
                 assert!(selected_piece.is_some());
-                println!("Handling piece deselection for {:?}", piece);
+                println!("DEBUG: handling piece deselection for {:?}", piece);
 
                 // remove `PossibleTarget` component to reset squares to default color
                 possible_targets_q.for_each(|entity| {
@@ -86,7 +86,7 @@ pub fn handle_piece_selection_events(
             }
             PieceSelectionEvent::Reselect(piece) => {
                 let selected = selected_piece.as_ref().expect("selected piece must be set");
-                println!("Handling piece reselection for {:?}", piece);
+                println!("DEBUG: handling piece reselection for {:?}", piece);
 
                 // remove `Selected` component from all squares to clear previous move
                 selected_squares_q.for_each(|square| {

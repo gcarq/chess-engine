@@ -1,6 +1,6 @@
 use crate::board::components::Square;
 use crate::board::events::{PieceSelectionEvent, UncheckedPieceMoveEvent};
-use crate::board::{utils, SelectedPiece};
+use crate::board::{utils, CurrentPlayer, SelectedPiece};
 use crate::{some_or_return, BoardCamera, Location, Piece};
 use bevy::prelude::*;
 
@@ -11,6 +11,7 @@ pub fn left_click_piece_selection(
     cameras_q: Query<(&Camera, &GlobalTransform), With<BoardCamera>>,
     selected_piece: Option<Res<SelectedPiece>>,
     mouse_button_input: Res<Input<MouseButton>>,
+    current_player: Res<CurrentPlayer>,
     windows: Res<Windows>,
     mut piece_selection_writer: EventWriter<PieceSelectionEvent>,
     mut moves_writer: EventWriter<UncheckedPieceMoveEvent>,
@@ -25,7 +26,7 @@ pub fn left_click_piece_selection(
         if !utils::intersects_square(&cursor, &square_transform.translation) {
             continue;
         }
-        println!("clicked on {}", square_location);
+        println!("DEBUG: clicked on {}", square_location);
         let piece = utils::resolve_piece(square_children, &pieces_q);
         match selected_piece {
             Some(selected) => {
@@ -42,8 +43,12 @@ pub fn left_click_piece_selection(
                 ));
             }
             None => {
-                piece_selection_writer
-                    .send(PieceSelectionEvent::Selected(some_or_return!(piece).0));
+                let (entity, comp) = some_or_return!(piece);
+                if current_player.0 != comp.color {
+                    println!("INFO: It's {}'s turn", current_player.0);
+                    break;
+                }
+                piece_selection_writer.send(PieceSelectionEvent::Selected(entity));
             }
         }
 

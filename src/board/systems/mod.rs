@@ -8,7 +8,7 @@ use crate::board::events::{
     UncheckedPieceMoveEvent,
 };
 use crate::board::utils::square_color;
-use crate::board::{utils, PlayedMove, PlayedMoves};
+use crate::board::{utils, CurrentPlayer, PlayedMove, PlayedMoves};
 use crate::constants::PIECE_Z_AXIS;
 use crate::ok_or_return;
 use bevy::prelude::*;
@@ -38,7 +38,7 @@ pub fn handle_unchecked_move_events(
     for event in unchecked_moves.iter() {
         let (ns_children, ns_location) = ok_or_return!(square_q.get(event.target));
 
-        // check if new square is blocked by a same color piece
+        // check if new square is occupied by a same color piece
         if let Some((piece_entity, piece_comp)) = utils::resolve_piece(ns_children, &pieces_q) {
             if piece_comp.color == event.selected.piece_comp.color {
                 piece_selections.send(PieceSelectionEvent::Reselect(piece_entity));
@@ -62,6 +62,7 @@ pub fn handle_checked_move_events(
     square_q: Query<&GlobalTransform, With<Square>>,
     possible_targets_q: Query<Entity, With<PossibleTarget>>,
     mut selected_q: Query<&mut GlobalTransform, (With<Selected>, Without<Square>)>,
+    mut current_player: ResMut<CurrentPlayer>,
     mut checked_moves_reader: EventReader<CheckedPieceMoveEvent>,
     mut played_moves_writer: EventWriter<PlayedMoveEvent>,
 ) {
@@ -79,6 +80,8 @@ pub fn handle_checked_move_events(
                 played_moves_writer.send(PlayedMoveEvent(PlayedMove::from_event(
                     event, target, loc_comp,
                 )));
+
+                current_player.switch();
 
                 commands.entity(target).insert(Selected);
                 utils::deselect_piece(&mut commands, event.selected.piece);
@@ -109,6 +112,6 @@ pub fn record_played_moves(
 ) {
     for event in moves_reader.iter() {
         played_moves.0.push(event.0);
-        println!("{}", event.0.notation());
+        println!("DEBUG: {}", event.0.notation());
     }
 }

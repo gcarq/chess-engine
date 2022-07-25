@@ -1,3 +1,4 @@
+use crate::board::components::PieceColor;
 use crate::board::events::{
     CheckedPieceMoveEvent, PieceSelectionEvent, PlayedMoveEvent, UncheckedPieceMoveEvent,
 };
@@ -6,7 +7,7 @@ use crate::board::systems::{
     record_played_moves, selection,
 };
 use crate::board::systems::{input, startup};
-use crate::board::PlayedMoves;
+use crate::board::{CurrentPlayer, PlayedMoves};
 use bevy::prelude::*;
 
 pub struct BoardPlugin;
@@ -14,6 +15,7 @@ pub struct BoardPlugin;
 impl Plugin for BoardPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PlayedMoves>()
+            .insert_resource(CurrentPlayer(PieceColor::White))
             .add_startup_system(startup::setup_board)
             .add_event::<PieceSelectionEvent>()
             .add_event::<UncheckedPieceMoveEvent>()

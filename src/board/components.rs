@@ -136,6 +136,16 @@ pub enum PieceColor {
     White,
 }
 
+impl fmt::Display for PieceColor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let color = match self {
+            PieceColor::Black => "Black",
+            PieceColor::White => "White",
+        };
+        write!(f, "{}", color)
+    }
+}
+
 #[derive(Component, Inspectable, Debug, Copy, Clone)]
 pub struct Piece {
     pub kind: PieceType,

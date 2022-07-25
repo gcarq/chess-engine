@@ -213,3 +213,20 @@ impl PlayedMove {
 
 #[derive(Default)]
 pub struct PlayedMoves(pub Vec<PlayedMove>);
+
+pub struct CurrentPlayer(pub PieceColor);
+
+impl Default for CurrentPlayer {
+    fn default() -> Self {
+        Self(PieceColor::White)
+    }
+}
+
+impl CurrentPlayer {
+    pub fn switch(&mut self) {
+        match self.0 {
+            PieceColor::Black => self.0 = PieceColor::White,
+            PieceColor::White => self.0 = PieceColor::Black,
+        }
+    }
+}
