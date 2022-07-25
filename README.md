@@ -5,6 +5,8 @@ In the current state the engine can handle basic piece movements and rendering.
 
 The assets in use are copied from [lichess](https://github.com/lichess-org/lila/tree/master/public/images), authors and license can be found [here](https://github.com/lichess-org/lila/blob/master/COPYING.md#exceptions-free).
 
+![Screenshot_20220725_134138](https://user-images.githubusercontent.com/4720529/180769948-58580c81-615a-407c-9b72-77605cc20b96.png)
+
 ## Run
 
 Use `cargo run` to launch the app, when built in debug mode a debug inspector will be shown as well.
