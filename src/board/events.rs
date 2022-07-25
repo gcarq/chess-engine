@@ -1,4 +1,4 @@
-use crate::board::SelectedPiece;
+use crate::board::{PlayedMove, SelectedPiece};
 use bevy::prelude::*;
 
 pub struct UncheckedPieceMoveEvent {
@@ -41,3 +41,5 @@ pub enum PieceSelectionEvent {
     Deselected(Entity),
     Reselect(Entity),
 }
+
+pub struct PlayedMoveEvent(pub PlayedMove);

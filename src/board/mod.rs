@@ -1,10 +1,11 @@
 use crate::board::components::{PieceColor, PieceType};
+use crate::board::events::CheckedPieceMoveEvent;
 use crate::{Location, Piece};
 use bevy::prelude::*;
 use itertools::Itertools;
 
 pub mod components;
-mod events;
+pub mod events;
 pub mod plugin;
 mod systems;
 mod utils;
@@ -174,3 +175,41 @@ impl SelectedPiece {
             .collect()
     }
 }
+
+#[derive(Copy, Clone)]
+pub struct PlayedMove {
+    pub piece: Entity,
+    pub piece_comp: Piece,
+    pub source_square: Entity,
+    pub source_square_comp: Location,
+    pub target_square: Entity,
+    pub target_square_comp: Location,
+}
+
+impl PlayedMove {
+    pub fn from_event(
+        event: &CheckedPieceMoveEvent,
+        target_entity: Entity,
+        target_location: Location,
+    ) -> Self {
+        PlayedMove {
+            piece: event.selected.piece,
+            piece_comp: event.selected.piece_comp,
+            source_square: event.selected.square,
+            source_square_comp: event.selected.location_comp,
+            target_square: target_entity,
+            target_square_comp: target_location,
+        }
+    }
+
+    pub fn notation(&self) -> String {
+        if self.piece_comp.kind == PieceType::Pawn {
+            format!("{}", self.target_square_comp)
+        } else {
+            format!("{}{}", self.piece_comp.notation(), self.target_square_comp)
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct PlayedMoves(pub Vec<PlayedMove>);

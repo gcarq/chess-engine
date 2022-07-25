@@ -4,10 +4,11 @@ pub mod startup;
 
 use crate::board::components::{Location, Piece, PossibleTarget, Selected, Square};
 use crate::board::events::{
-    CheckedPieceMoveEvent, MoveTarget, PieceSelectionEvent, UncheckedPieceMoveEvent,
+    CheckedPieceMoveEvent, MoveTarget, PieceSelectionEvent, PlayedMoveEvent,
+    UncheckedPieceMoveEvent,
 };
-use crate::board::utils;
 use crate::board::utils::square_color;
+use crate::board::{utils, PlayedMove, PlayedMoves};
 use crate::constants::PIECE_Z_AXIS;
 use crate::ok_or_return;
 use bevy::prelude::*;
@@ -61,18 +62,24 @@ pub fn handle_checked_move_events(
     square_q: Query<&GlobalTransform, With<Square>>,
     possible_targets_q: Query<Entity, With<PossibleTarget>>,
     mut selected_q: Query<&mut GlobalTransform, (With<Selected>, Without<Square>)>,
-    mut piece_move_events: EventReader<CheckedPieceMoveEvent>,
+    mut checked_moves_reader: EventReader<CheckedPieceMoveEvent>,
+    mut played_moves_writer: EventWriter<PlayedMoveEvent>,
 ) {
-    for event in piece_move_events.iter() {
+    for event in checked_moves_reader.iter() {
         let mut selected_tf = ok_or_return!(selected_q.get_mut(event.selected.piece));
 
         let target_square = match event.target {
             // if a legal move occurs we deselect the piece, but leave the source and target squares
             // as selected until a new move begins
             MoveTarget::Legal(target) => {
-                println!("legal move");
                 let loc_comp = *location_q.get(target).unwrap();
                 utils::update_entity_for_move(&mut commands, event, target, loc_comp);
+
+                // trigger event that this move has been played
+                played_moves_writer.send(PlayedMoveEvent(PlayedMove::from_event(
+                    event, target, loc_comp,
+                )));
+
                 commands.entity(target).insert(Selected);
                 utils::deselect_piece(&mut commands, event.selected.piece);
                 square_q.get(target).unwrap()
@@ -92,5 +99,16 @@ pub fn handle_checked_move_events(
 
         selected_tf.translation.z = PIECE_Z_AXIS;
         utils::adjust_to_square(&mut selected_tf, target_square);
+    }
+}
+
+/// Handles `PlayedMoveEvent` to display them
+pub fn record_played_moves(
+    mut played_moves: ResMut<PlayedMoves>,
+    mut moves_reader: EventReader<PlayedMoveEvent>,
+) {
+    for event in moves_reader.iter() {
+        played_moves.0.push(event.0);
+        println!("{}", event.0.notation());
     }
 }

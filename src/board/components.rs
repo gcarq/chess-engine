@@ -120,7 +120,7 @@ impl fmt::Display for File {
 #[derive(Component)]
 pub struct Board;
 
-#[derive(Inspectable, Debug, Copy, Clone)]
+#[derive(Inspectable, Debug, Copy, Clone, Eq, PartialEq)]
 pub enum PieceType {
     King,
     Queen,

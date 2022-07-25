@@ -47,9 +47,9 @@ pub fn handle_piece_selection_events(
     piece_locations_q: Query<(&Piece, &Location)>,
     piece_q: Query<&Parent, With<Piece>>,
     selected_piece: Option<Res<SelectedPiece>>,
-    mut selection_events: EventReader<PieceSelectionEvent>,
+    mut selection_event_reader: EventReader<PieceSelectionEvent>,
 ) {
-    for event in selection_events.iter() {
+    for event in selection_event_reader.iter() {
         match event {
             PieceSelectionEvent::Selected(piece) => {
                 assert!(selected_piece.is_none());

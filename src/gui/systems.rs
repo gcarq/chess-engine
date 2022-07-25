@@ -1,5 +1,6 @@
+use crate::board::PlayedMoves;
 use crate::constants::SIDE_PANEL_RIGHT_WIDTH;
-use crate::gui::OccupiedScreenSpace;
+use crate::gui::{utils, OccupiedScreenSpace};
 use crate::{BoardCamera, OriginalCameraTransforms, TextCamera};
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext};
@@ -7,6 +8,7 @@ use bevy_egui::{egui, EguiContext};
 pub fn render_ui(
     mut egui_context: ResMut<EguiContext>,
     mut occupied_screen_space: ResMut<OccupiedScreenSpace>,
+    played_moves: Res<PlayedMoves>,
 ) {
     occupied_screen_space.left = 0.0;
     occupied_screen_space.top = 0.0;
@@ -14,6 +16,7 @@ pub fn render_ui(
         .default_width(SIDE_PANEL_RIGHT_WIDTH)
         .resizable(false)
         .show(egui_context.ctx_mut(), |ui| {
+            utils::build_played_moves_grid(ui, &played_moves.0);
             ui.allocate_rect(ui.available_rect_before_wrap(), egui::Sense::hover());
         })
         .response

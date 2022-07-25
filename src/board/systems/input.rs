@@ -12,8 +12,8 @@ pub fn left_click_piece_selection(
     selected_piece: Option<Res<SelectedPiece>>,
     mouse_button_input: Res<Input<MouseButton>>,
     windows: Res<Windows>,
-    mut piece_selections: EventWriter<PieceSelectionEvent>,
-    mut unchecked_moves: EventWriter<UncheckedPieceMoveEvent>,
+    mut piece_selection_writer: EventWriter<PieceSelectionEvent>,
+    mut moves_writer: EventWriter<UncheckedPieceMoveEvent>,
 ) {
     // only consider piece selection if left mouse button was just pressed
     if !mouse_button_input.just_pressed(MouseButton::Left) {
@@ -31,18 +31,19 @@ pub fn left_click_piece_selection(
             Some(selected) => {
                 // consider it a piece deselection if the same square was clicked again
                 if square_entity == selected.square {
-                    piece_selections
+                    piece_selection_writer
                         .send(PieceSelectionEvent::Deselected(some_or_return!(piece).0));
                     break;
                 }
 
-                unchecked_moves.send(UncheckedPieceMoveEvent::new(
+                moves_writer.send(UncheckedPieceMoveEvent::new(
                     selected.clone(),
                     square_entity,
                 ));
             }
             None => {
-                piece_selections.send(PieceSelectionEvent::Selected(some_or_return!(piece).0));
+                piece_selection_writer
+                    .send(PieceSelectionEvent::Selected(some_or_return!(piece).0));
             }
         }
 
