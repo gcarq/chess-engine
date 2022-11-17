@@ -1,7 +1,7 @@
 use crate::board::PlayedMoves;
 use crate::constants::SIDE_PANEL_RIGHT_WIDTH;
 use crate::gui::{utils, OccupiedScreenSpace};
-use crate::{BoardCamera, OriginalCameraTransforms, TextCamera};
+use crate::{BoardCamera, OriginalCameraTransforms};
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext};
 
@@ -35,16 +35,10 @@ pub fn render_ui(
 pub fn update_camera_transform_system(
     occupied_screen_space: Res<OccupiedScreenSpace>,
     original_camera_transform: Res<OriginalCameraTransforms>,
-    mut board_camera_query: Query<&mut Transform, (With<BoardCamera>, Without<TextCamera>)>,
-    mut text_camera_query: Query<&mut Transform, (With<TextCamera>, Without<BoardCamera>)>,
+    mut board_camera_query: Query<&mut Transform, With<BoardCamera>>,
 ) {
     let horizontal_offset = (occupied_screen_space.right - occupied_screen_space.left) / 2.0;
-
     let mut board_cam_tf = board_camera_query.get_single_mut().unwrap();
     board_cam_tf.translation.x =
         original_camera_transform.board_camera.translation.x + horizontal_offset;
-
-    let mut text_cam_tf = text_camera_query.get_single_mut().unwrap();
-    text_cam_tf.translation.x =
-        original_camera_transform.text_camera.translation.x + horizontal_offset;
 }

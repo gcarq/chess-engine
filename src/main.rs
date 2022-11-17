@@ -21,13 +21,10 @@ mod resources;
 /// to offset the camera after drawing UI elements
 pub struct OriginalCameraTransforms {
     pub board_camera: Transform,
-    pub text_camera: Transform,
 }
 
 #[derive(Component)]
 pub struct BoardCamera;
-#[derive(Component)]
-pub struct TextCamera;
 
 pub struct DebugPlugin;
 
@@ -65,15 +62,12 @@ fn main() {
 }
 
 fn setup_basics(mut commands: Commands) {
-    let board_camera = OrthographicCameraBundle::new_2d();
-    let text_camera = UiCameraBundle::default();
+    let board_camera = Camera2dBundle::default();
     // Optimal power saving and present mode settings for desktop apps.
     commands.insert_resource(WinitSettings::game());
     commands.insert_resource(ClearColor(WINDOW_BACKGROUND_COLOR));
     commands.insert_resource(OriginalCameraTransforms {
         board_camera: board_camera.transform,
-        text_camera: text_camera.transform,
     });
     commands.spawn_bundle(board_camera).insert(BoardCamera);
-    commands.spawn_bundle(text_camera).insert(TextCamera);
 }

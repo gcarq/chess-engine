@@ -60,7 +60,7 @@ pub fn handle_piece_selection_events(
                     commands.entity(square).remove::<Selected>();
                 });
 
-                let square = ok_or_return!(piece_q.get(*piece)).0;
+                let square = ok_or_return!(piece_q.get(*piece)).get();
                 let selected = SelectedPiece::new(square, *piece, world, &piece_locations_q)
                     .expect("unable to select piece");
 
@@ -80,7 +80,7 @@ pub fn handle_piece_selection_events(
                 });
 
                 // deselect current square and piece
-                let square = ok_or_return!(piece_q.get(*piece)).0;
+                let square = ok_or_return!(piece_q.get(*piece)).get();
                 commands.entity(square).remove::<Selected>();
                 utils::deselect_piece(&mut commands, *piece);
             }
@@ -99,7 +99,7 @@ pub fn handle_piece_selection_events(
                 });
                 utils::deselect_piece(&mut commands, selected.piece);
 
-                let square = ok_or_return!(piece_q.get(*piece)).0;
+                let square = ok_or_return!(piece_q.get(*piece)).get();
                 let selected = SelectedPiece::new(square, *piece, world, &piece_locations_q)
                     .expect("unable to select piece");
 

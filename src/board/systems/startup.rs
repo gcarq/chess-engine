@@ -34,7 +34,7 @@ fn draw_horizontal_legend(commands: &mut Commands, font: &Res<DefaultFont>) {
         style: Style {
             justify_content: JustifyContent::SpaceAround,
             align_items: AlignItems::Center,
-            position: Rect {
+            position: UiRect {
                 bottom: Val::Px((WINDOW_HEIGHT - BOARD_HEIGHT) / 4.0),
                 left: Val::Px(SQUARE_SIZE * 3.0),
                 ..default()
@@ -58,10 +58,9 @@ fn draw_horizontal_legend(commands: &mut Commands, font: &Res<DefaultFont>) {
         .with_children(|parent| {
             for y in 0..8 {
                 parent.spawn_bundle(TextBundle {
-                    text: Text::with_section(
+                    text: Text::from_section(
                         format!("{}", File::from_index(y)),
                         text_style.clone(),
-                        TextAlignment::default(),
                     ),
                     ..default()
                 });
@@ -76,7 +75,7 @@ fn draw_vertical_legend(commands: &mut Commands, font: &Res<DefaultFont>) {
         style: Style {
             justify_content: JustifyContent::SpaceAround,
             align_items: AlignItems::Center,
-            position: Rect {
+            position: UiRect {
                 bottom: Val::Px(SQUARE_SIZE),
                 left: Val::Px(WINDOW_HEIGHT - BOARD_HEIGHT + SQUARE_SIZE),
                 ..default()
@@ -100,10 +99,9 @@ fn draw_vertical_legend(commands: &mut Commands, font: &Res<DefaultFont>) {
         .with_children(|parent| {
             for x in 0..8 {
                 parent.spawn_bundle(TextBundle {
-                    text: Text::with_section(
+                    text: Text::from_section(
                         format!("{}", utils::rank_for_index(x)),
                         text_style.clone(),
-                        TextAlignment::default(),
                     ),
                     ..default()
                 });

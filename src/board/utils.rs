@@ -15,13 +15,13 @@ pub fn translate_cursor_pos(
     let screen_pos = window.cursor_position()?;
 
     // get the size of the window
-    let window_size = Vec2::new(window.width() as f32, window.height() as f32);
+    let window_size = Vec2::new(window.width(), window.height());
 
     // convert screen position [0..resolution] to ndc [-1..1] (gpu coordinates)
     let ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;
 
     // matrix for undoing the projection and camera transform
-    let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix.inverse();
+    let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix().inverse();
 
     // use it to convert ndc to world-space coordinates
     let world_pos = ndc_to_world.project_point3(ndc.extend(-1.0));
@@ -92,8 +92,10 @@ pub fn update_entity_for_move(
 /// Adjusts the given piece `GlobalTransform` to square `GlobalTransform`
 pub fn adjust_to_square(piece: &mut GlobalTransform, square: &GlobalTransform) {
     let center_offset = center_offset();
-    piece.translation.x = square.translation.x - center_offset;
-    piece.translation.y = square.translation.y + center_offset;
+    let Vec3 { x, y, z: _ } = square.translation();
+    let translation = piece.translation_mut();
+    translation.x = x - center_offset;
+    translation.y = y + center_offset;
 }
 
 /// Returns the first entity from the list that has the `Piece` component

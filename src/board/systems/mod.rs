@@ -100,7 +100,7 @@ pub fn handle_checked_move_events(
             commands.entity(entity).despawn_recursive();
         });
 
-        selected_tf.translation.z = PIECE_Z_AXIS;
+        selected_tf.translation_mut().z = PIECE_Z_AXIS;
         utils::adjust_to_square(&mut selected_tf, target_square);
     }
 }

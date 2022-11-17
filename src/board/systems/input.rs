@@ -23,7 +23,7 @@ pub fn left_click_piece_selection(
 
     let cursor = some_or_return!(utils::translate_cursor_pos(cameras_q, windows));
     for (square_entity, square_children, square_location, square_transform) in squares_q.iter() {
-        if !utils::intersects_square(&cursor, &square_transform.translation) {
+        if !utils::intersects_square(&cursor, &square_transform.translation()) {
             continue;
         }
         println!("DEBUG: clicked on {}", square_location);
